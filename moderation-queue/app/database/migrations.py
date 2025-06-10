@@ -26,7 +26,14 @@ async def run_migrations() -> None:
 
     sql_content = sql_file.read_text(encoding="utf-8")
 
+    # Split SQL statements (MySQL doesn't support multiple statements in one execute)
+    statements = [stmt.strip() for stmt in sql_content.split(';') if stmt.strip()]
+
     async with pool.acquire() as conn:
-        await conn.execute(sql_content)
+        async with conn.cursor() as cursor:
+            for statement in statements:
+                if statement:
+                    await cursor.execute(statement)
+            await conn.commit()
 
     logger.info("Migrations completed successfully")

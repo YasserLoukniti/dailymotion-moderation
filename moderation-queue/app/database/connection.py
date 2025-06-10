@@ -1,4 +1,4 @@
-import asyncpg
+import aiomysql
 from typing import Optional
 import logging
 
@@ -7,25 +7,30 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 # Global connection pool
-_pool: Optional[asyncpg.Pool] = None
+_pool: Optional[aiomysql.Pool] = None
 
 
-async def get_pool() -> asyncpg.Pool:
+async def get_pool() -> aiomysql.Pool:
     """
-    Get or create the asyncpg connection pool.
+    Get or create the aiomysql connection pool.
 
     Returns:
-        asyncpg.Pool: Database connection pool
+        aiomysql.Pool: Database connection pool
     """
     global _pool
 
     if _pool is None:
         logger.info("Creating database connection pool")
-        _pool = await asyncpg.create_pool(
-            settings.database_url,
-            min_size=settings.db_min_pool_size,
-            max_size=settings.db_max_pool_size,
-            command_timeout=60,
+        _pool = await aiomysql.create_pool(
+            host=settings.database_host,
+            port=settings.database_port,
+            user=settings.database_user,
+            password=settings.database_password,
+            db=settings.database_name,
+            minsize=settings.db_min_pool_size,
+            maxsize=settings.db_max_pool_size,
+            autocommit=False,
+            charset='utf8mb4',
         )
         logger.info(
             f"Connection pool created (min={settings.db_min_pool_size}, "
@@ -41,6 +46,7 @@ async def close_pool() -> None:
 
     if _pool is not None:
         logger.info("Closing database connection pool")
-        await _pool.close()
+        _pool.close()
+        await _pool.wait_closed()
         _pool = None
         logger.info("Connection pool closed")
