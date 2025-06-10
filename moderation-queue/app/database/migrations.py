@@ -16,10 +16,20 @@ async def run_migrations() -> None:
     pool = await get_pool()
 
     # Read the SQL schema file
-    sql_file = Path(__file__).parent.parent.parent.parent / "scripts" / "init.sql"
+    # Check multiple possible locations (local dev vs Docker container)
+    possible_paths = [
+        Path(__file__).parent.parent.parent.parent / "scripts" / "init.sql",
+        Path("/app/scripts/init.sql"),
+    ]
 
-    if not sql_file.exists():
-        logger.warning(f"Migration file not found: {sql_file}")
+    sql_file = None
+    for path in possible_paths:
+        if path.exists():
+            sql_file = path
+            break
+
+    if sql_file is None:
+        logger.warning("Migration file not found, schema may already be initialized by Docker")
         return
 
     logger.info(f"Running migrations from {sql_file}")
