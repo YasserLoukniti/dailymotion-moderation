@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from app.database.connection import get_pool, close_pool
 from app.database.migrations import run_migrations
+from app.routes.moderation import router as moderation_router
 
 # Configure logging
 logging.basicConfig(
@@ -44,6 +45,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Register routes
+app.include_router(moderation_router)
 
 
 @app.get("/health")
