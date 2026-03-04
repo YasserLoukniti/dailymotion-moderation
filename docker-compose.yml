@@ -7,7 +7,7 @@ services:
       MYSQL_PASSWORD: moderation_pass
       MYSQL_ROOT_PASSWORD: root_pass
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -39,6 +39,9 @@ services:
       DATABASE_NAME: moderation
       DATABASE_USER: moderation_user
       DATABASE_PASSWORD: moderation_pass
+    volumes:
+      - ./moderation-queue:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       mysql:
         condition: service_healthy
@@ -53,6 +56,9 @@ services:
       REDIS_URL: redis://redis:6379/0
       DAILYMOTION_API_BASE_URL: https://api.dailymotion.com
       CACHE_TTL: 300
+    volumes:
+      - ./dailymotion-proxy:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
     depends_on:
       redis:
         condition: service_healthy
