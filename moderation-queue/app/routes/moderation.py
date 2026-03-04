@@ -1,7 +1,7 @@
 import logging
 from fastapi import APIRouter, HTTPException, status, Depends
 
-from app.models.schemas import AddVideoRequest, VideoResponse
+from app.models.schemas import AddVideoRequest, VideoResponse, FlagVideoRequest, FlagVideoResponse
 from app.services.moderation_service import ModerationService
 from app.utils.auth import get_moderator
 
@@ -69,13 +69,52 @@ async def get_video(moderator: str = Depends(get_moderator)):
         result = await moderation_service.get_video_for_moderator(moderator)
 
         if result is None:
-            # No content — queue is empty
             from fastapi import Response
             return Response(status_code=status.HTTP_204_NO_CONTENT)
 
         return result
     except Exception as e:
         logger.error(f"Error getting video for moderator {moderator}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
+@router.post(
+    "/flag_video",
+    response_model=FlagVideoResponse,
+    summary="Flag a video as spam or not spam"
+)
+async def flag_video(
+    request: FlagVideoRequest,
+    moderator: str = Depends(get_moderator)
+):
+    """
+    Flag a video as spam or not spam.
+
+    Returns HTTP 200 with video_id and new status.
+    Returns HTTP 403 if moderator is not assigned to this video.
+    Returns HTTP 404 if video not found.
+    Returns HTTP 409 if video already flagged.
+    Returns HTTP 422 if status is invalid.
+    """
+    try:
+        result = await moderation_service.flag_video(
+            request.video_id,
+            request.status,
+            moderator
+        )
+        return result
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
+    except Exception as e:
+        logger.error(f"Error flagging video: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"
