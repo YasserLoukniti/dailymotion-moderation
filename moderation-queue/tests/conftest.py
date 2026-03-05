@@ -45,3 +45,30 @@ async def client():
         base_url="http://test"
     ) as ac:
         yield ac
+
+
+# ============================================================================
+# SHARED TEST HELPERS
+# ============================================================================
+
+async def add_video(client: AsyncClient, video_id: int) -> None:
+    """Add a video to the queue and assert 201."""
+    response = await client.post("/add_video", json={"video_id": video_id})
+    assert response.status_code == 201
+
+
+async def get_video(client: AsyncClient, moderator: str):
+    """Get next video for a moderator."""
+    return await client.get(
+        "/get_video",
+        headers={"Authorization": encode_moderator(moderator)}
+    )
+
+
+async def flag_video(client: AsyncClient, moderator: str, video_id: int, status: str):
+    """Flag a video as spam or not spam."""
+    return await client.post(
+        "/flag_video",
+        json={"video_id": video_id, "status": status},
+        headers={"Authorization": encode_moderator(moderator)}
+    )

@@ -8,30 +8,9 @@ Specs:
 - After flagging, a second entry appears with moderator name
 - Returns 404 if video not found
 """
-import pytest
 from httpx import AsyncClient
 
-from tests.conftest import encode_moderator
-
-
-async def add_video(client: AsyncClient, video_id: int) -> None:
-    response = await client.post("/add_video", json={"video_id": video_id})
-    assert response.status_code == 201
-
-
-async def get_video(client: AsyncClient, moderator: str):
-    return await client.get(
-        "/get_video",
-        headers={"Authorization": encode_moderator(moderator)}
-    )
-
-
-async def flag_video(client: AsyncClient, moderator: str, video_id: int, status: str):
-    return await client.post(
-        "/flag_video",
-        json={"video_id": video_id, "status": status},
-        headers={"Authorization": encode_moderator(moderator)}
-    )
+from tests.conftest import add_video, get_video, flag_video
 
 
 async def test_log_video_initial_entry(client: AsyncClient):

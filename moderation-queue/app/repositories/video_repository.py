@@ -6,6 +6,7 @@ from datetime import datetime
 from app.database.connection import get_pool
 from app.database import queries
 from app.models.enums import VideoStatus
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +147,7 @@ class VideoRepository:
 
                 try:
                     # Step 1: Get candidate video IDs without locking
-                    await cursor.execute(queries.GET_NEXT_PENDING_VIDEO_IDS)
+                    await cursor.execute(queries.GET_NEXT_PENDING_VIDEO_IDS, (settings.candidate_batch_size,))
                     candidates = await cursor.fetchall()
 
                     if not candidates:

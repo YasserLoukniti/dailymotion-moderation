@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     db_min_pool_size: int = 5
     db_max_pool_size: int = 20
 
+    # Queue settings
+    candidate_batch_size: int = 10  # Number of candidate videos to fetch for locking
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

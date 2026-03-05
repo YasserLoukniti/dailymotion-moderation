@@ -42,7 +42,7 @@ GET_NEXT_PENDING_VIDEO_IDS = """
 SELECT video_id FROM videos
 WHERE status = 'pending' AND assigned_moderator IS NULL
 ORDER BY created_at ASC
-LIMIT 10
+LIMIT %s
 """
 
 LOCK_VIDEO_FOR_UPDATE = """

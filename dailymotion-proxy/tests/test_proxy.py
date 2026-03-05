@@ -6,6 +6,7 @@ Specs:
 - video_id ending with 404 returns HTTP 404
 - Dailymotion API timeout returns HTTP 504
 - Dailymotion API error returns HTTP 502
+- Dailymotion API rate limit returns HTTP 429 with Retry-After header
 """
 import pytest
 from unittest.mock import AsyncMock, patch
@@ -79,3 +80,22 @@ async def test_get_video_info_api_error(client: AsyncClient):
             response = await client.get("/get_video_info/123456")
 
     assert response.status_code == 502
+
+
+async def test_get_video_info_rate_limited(client: AsyncClient):
+    """Dailymotion API rate limit returns 429 with Retry-After."""
+    mock_response = httpx.Response(
+        429,
+        request=httpx.Request("GET", "https://api.dailymotion.com"),
+        headers={"Retry-After": "120"},
+    )
+    with patch(
+        "app.routes.proxy.dailymotion_client.fetch_video_info",
+        new_callable=AsyncMock,
+        side_effect=httpx.HTTPStatusError("rate limited", request=mock_response.request, response=mock_response),
+    ):
+        with patch("app.routes.proxy.cache_service.cache_get", new_callable=AsyncMock, return_value=None):
+            response = await client.get("/get_video_info/123456")
+
+    assert response.status_code == 429
+    assert response.headers["Retry-After"] == "120"

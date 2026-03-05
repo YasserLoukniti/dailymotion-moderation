@@ -1,9 +1,17 @@
 import logging
-from fastapi import APIRouter, HTTPException, status, Depends
+from typing import List
+
+from fastapi import APIRouter, HTTPException, Response, status, Depends
 
 from app.models.schemas import AddVideoRequest, VideoResponse, FlagVideoRequest, FlagVideoResponse, StatsResponse, ModerationLogEntry
 from app.services.moderation_service import ModerationService
 from app.utils.auth import get_moderator
+from app.exceptions import (
+    VideoNotFoundError,
+    VideoDuplicateError,
+    VideoAlreadyFlaggedError,
+    ModeratorNotAssignedError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +40,9 @@ async def add_video(request: AddVideoRequest):
     try:
         await moderation_service.add_video(request.video_id)
         return None  # 201 with no body
-    except ValueError as e:
-        # Video already exists
+    except VideoDuplicateError as e:
         logger.warning(f"Duplicate video: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
         logger.error(f"Error adding video: {e}", exc_info=True)
         raise HTTPException(
@@ -69,7 +73,6 @@ async def get_video(moderator: str = Depends(get_moderator)):
         result = await moderation_service.get_video_for_moderator(moderator)
 
         if result is None:
-            from fastapi import Response
             return Response(status_code=status.HTTP_204_NO_CONTENT)
 
         return result
@@ -106,13 +109,12 @@ async def flag_video(
             moderator
         )
         return result
-    except PermissionError as e:
+    except VideoNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ModeratorNotAssignedError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    except ValueError as e:
-        error_msg = str(e)
-        if "not found" in error_msg:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
+    except VideoAlreadyFlaggedError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
         logger.error(f"Error flagging video: {e}", exc_info=True)
         raise HTTPException(
@@ -144,7 +146,7 @@ async def stats():
 
 @router.get(
     "/log_video/{video_id}",
-    response_model=list[ModerationLogEntry],
+    response_model=List[ModerationLogEntry],
     summary="Get moderation history for a video"
 )
 async def log_video(video_id: int):
@@ -157,7 +159,7 @@ async def log_video(video_id: int):
     try:
         result = await moderation_service.get_video_logs(video_id)
         return result.logs
-    except ValueError as e:
+    except VideoNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting logs for video {video_id}: {e}", exc_info=True)

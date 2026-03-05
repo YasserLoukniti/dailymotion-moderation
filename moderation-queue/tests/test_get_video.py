@@ -12,34 +12,9 @@ Specs:
 - Concurrent moderators must NEVER get the same video
 """
 import asyncio
-import base64
-import pytest
 from httpx import AsyncClient
 
-from tests.conftest import encode_moderator
-
-
-# ============================================================================
-# HELPERS
-# ============================================================================
-
-async def add_video(client: AsyncClient, video_id: int) -> None:
-    """Helper to add a video to the queue."""
-    response = await client.post("/add_video", json={"video_id": video_id})
-    assert response.status_code == 201
-
-
-async def get_video(client: AsyncClient, moderator: str):
-    """Helper to get a video for a moderator."""
-    return await client.get(
-        "/get_video",
-        headers={"Authorization": encode_moderator(moderator)}
-    )
-
-
-# ============================================================================
-# TESTS
-# ============================================================================
+from tests.conftest import add_video, get_video
 
 async def test_get_video_returns_200_with_video_id(client: AsyncClient):
     """Basic case: moderator gets a pending video."""

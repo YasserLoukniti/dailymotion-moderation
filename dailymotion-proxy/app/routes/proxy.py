@@ -3,6 +3,7 @@ import logging
 import httpx
 from fastapi import APIRouter, HTTPException, status
 
+from app.models.schemas import VideoInfoResponse
 from app.services import cache_service, dailymotion_client
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,7 @@ router = APIRouter(tags=["proxy"])
 
 @router.get(
     "/get_video_info/{video_id}",
+    response_model=VideoInfoResponse,
     summary="Get video information from Dailymotion API"
 )
 async def get_video_info(video_id: int):

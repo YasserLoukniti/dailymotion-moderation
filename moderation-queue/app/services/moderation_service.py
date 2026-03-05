@@ -10,6 +10,12 @@ from app.models.schemas import (
     VideoLogsResponse
 )
 from app.models.enums import VideoStatus
+from app.exceptions import (
+    VideoNotFoundError,
+    VideoDuplicateError,
+    VideoAlreadyFlaggedError,
+    ModeratorNotAssignedError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +46,7 @@ class ModerationService:
         exists = await self.repository.check_video_exists(video_id)
         if exists:
             logger.warning(f"Attempted to add duplicate video {video_id}")
-            raise ValueError(f"Video {video_id} already exists in the queue")
+            raise VideoDuplicateError(f"Video {video_id} already exists in the queue")
 
         # Add video
         await self.repository.add_video(video_id)
@@ -108,17 +114,17 @@ class ModerationService:
         video = await self.repository.get_video_by_id(video_id)
 
         if video is None:
-            raise ValueError(f"Video {video_id} not found")
+            raise VideoNotFoundError(f"Video {video_id} not found")
 
         # Check if video is pending
         if video['status'] != VideoStatus.PENDING.value:
-            raise ValueError(
+            raise VideoAlreadyFlaggedError(
                 f"Video {video_id} has already been flagged as '{video['status']}'"
             )
 
         # Check if moderator is assigned to this video
         if video['assigned_moderator'] != moderator:
-            raise PermissionError(
+            raise ModeratorNotAssignedError(
                 f"Video {video_id} is not assigned to moderator {moderator}"
             )
 
@@ -160,7 +166,7 @@ class ModerationService:
         # Check if video exists
         exists = await self.repository.check_video_exists(video_id)
         if not exists:
-            raise ValueError(f"Video {video_id} not found")
+            raise VideoNotFoundError(f"Video {video_id} not found")
 
         # Get logs
         logs_data = await self.repository.get_video_logs(video_id)
