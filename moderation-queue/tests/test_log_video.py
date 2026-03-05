@@ -48,6 +48,20 @@ async def test_log_video_after_flagging(client: AsyncClient):
     assert logs[1]["moderator"] == "john.doe"
 
 
+async def test_log_video_chronological_order(client: AsyncClient):
+    """Log entries are in chronological order (second date >= first)."""
+    await add_video(client, 300)
+    await get_video(client, "john.doe")
+    await flag_video(client, "john.doe", 300, "not spam")
+
+    response = await client.get("/log_video/300")
+
+    assert response.status_code == 200
+    logs = response.json()
+    assert len(logs) == 2
+    assert logs[0]["date"] <= logs[1]["date"]
+
+
 async def test_log_video_not_found(client: AsyncClient):
     """Requesting logs for a non-existent video returns 404."""
     response = await client.get("/log_video/99999")

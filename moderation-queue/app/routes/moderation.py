@@ -24,7 +24,7 @@ moderation_service = ModerationService()
 @router.post(
     "/add_video",
     status_code=status.HTTP_201_CREATED,
-    response_model=None,
+    response_model=VideoResponse,
     summary="Add a video to the moderation queue"
 )
 async def add_video(request: AddVideoRequest):
@@ -39,7 +39,7 @@ async def add_video(request: AddVideoRequest):
     """
     try:
         await moderation_service.add_video(request.video_id)
-        return None  # 201 with no body
+        return {"video_id": request.video_id}
     except VideoDuplicateError as e:
         logger.warning(f"Duplicate video: {e}")
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))

@@ -14,7 +14,7 @@ Specs:
 import asyncio
 from httpx import AsyncClient
 
-from tests.conftest import add_video, get_video
+from tests.conftest import add_video, get_video, flag_video
 
 async def test_get_video_returns_200_with_video_id(client: AsyncClient):
     """Basic case: moderator gets a pending video."""
@@ -89,6 +89,20 @@ async def test_get_video_invalid_base64_authorization(client: AsyncClient):
     )
 
     assert response.status_code == 401
+
+
+async def test_get_video_next_after_flagging(client: AsyncClient):
+    """After flagging, moderator gets the next pending video."""
+    await add_video(client, 401)
+    await add_video(client, 402)
+    await get_video(client, "john.doe")
+
+    await flag_video(client, "john.doe", 401, "spam")
+
+    # Should now get the second video
+    response = await get_video(client, "john.doe")
+    assert response.status_code == 200
+    assert response.json()["video_id"] == 402
 
 
 async def test_get_video_concurrent_moderators_get_unique_videos(client: AsyncClient):
