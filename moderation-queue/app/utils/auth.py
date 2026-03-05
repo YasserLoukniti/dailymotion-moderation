@@ -30,7 +30,7 @@ def decode_moderator(authorization: str) -> str:
         )
 
 
-async def get_moderator(authorization: str = Header(...)) -> str:
+async def get_moderator(authorization: str = Header(default=None)) -> str:
     """
     FastAPI dependency that extracts and decodes the moderator name
     from the Authorization header.
@@ -40,4 +40,9 @@ async def get_moderator(authorization: str = Header(...)) -> str:
         async def get_video(moderator: str = Depends(get_moderator)):
             ...
     """
+    if authorization is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing Authorization header"
+        )
     return decode_moderator(authorization)

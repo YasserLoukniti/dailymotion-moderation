@@ -38,6 +38,19 @@ LIMIT 1
 FOR UPDATE SKIP LOCKED
 """
 
+GET_NEXT_PENDING_VIDEO_IDS = """
+SELECT video_id FROM videos
+WHERE status = 'pending' AND assigned_moderator IS NULL
+ORDER BY created_at ASC
+LIMIT 10
+"""
+
+LOCK_VIDEO_FOR_UPDATE = """
+SELECT video_id FROM videos
+WHERE video_id = %s AND status = 'pending' AND assigned_moderator IS NULL
+FOR UPDATE SKIP LOCKED
+"""
+
 ASSIGN_VIDEO_TO_MODERATOR = """
 UPDATE videos
 SET assigned_moderator = %s, updated_at = NOW()

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS videos (
 CREATE INDEX idx_videos_status ON videos(status);
 CREATE INDEX idx_videos_assigned_moderator ON videos(assigned_moderator);
 CREATE INDEX idx_videos_created_at ON videos(created_at);
+CREATE INDEX idx_videos_pending_queue ON videos(status, assigned_moderator, created_at);
 
 CREATE TABLE IF NOT EXISTS moderation_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,

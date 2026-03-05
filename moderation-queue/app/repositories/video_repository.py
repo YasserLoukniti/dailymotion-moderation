@@ -127,8 +127,10 @@ class VideoRepository:
         """
         Assign the next pending video to a moderator using SELECT FOR UPDATE SKIP LOCKED.
 
-        This is a critical concurrency-safe operation that ensures multiple moderators
-        never get the same video.
+        Uses a two-step approach to avoid MySQL locking all candidate rows
+        during ORDER BY scans:
+        1. Get candidate video IDs (no lock)
+        2. Try to lock each candidate individually with SKIP LOCKED
 
         Args:
             moderator: The moderator name to assign the video to
@@ -140,30 +142,37 @@ class VideoRepository:
 
         async with pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
-                # Transaction is critical for atomicity
                 await conn.begin()
 
                 try:
-                    # Get next available video with row-level lock
-                    await cursor.execute(queries.GET_NEXT_PENDING_VIDEO_FOR_UPDATE)
-                    row = await cursor.fetchone()
+                    # Step 1: Get candidate video IDs without locking
+                    await cursor.execute(queries.GET_NEXT_PENDING_VIDEO_IDS)
+                    candidates = await cursor.fetchall()
 
-                    if row is None:
+                    if not candidates:
                         await conn.commit()
                         logger.info("No pending videos available in queue")
                         return None
 
-                    video_id = row['video_id']
+                    # Step 2: Try to lock each candidate one by one
+                    for candidate in candidates:
+                        vid = candidate['video_id']
+                        await cursor.execute(queries.LOCK_VIDEO_FOR_UPDATE, (vid,))
+                        row = await cursor.fetchone()
+                        if row is not None:
+                            # Successfully locked this video
+                            await cursor.execute(
+                                queries.ASSIGN_VIDEO_TO_MODERATOR,
+                                (moderator, vid)
+                            )
+                            await conn.commit()
+                            logger.info(f"Assigned video {vid} to moderator {moderator}")
+                            return vid
 
-                    # Assign video to moderator
-                    await cursor.execute(
-                        queries.ASSIGN_VIDEO_TO_MODERATOR,
-                        (moderator, video_id)
-                    )
-
+                    # All candidates were locked by other transactions
                     await conn.commit()
-                    logger.info(f"Assigned video {video_id} to moderator {moderator}")
-                    return video_id
+                    logger.info("No pending videos available in queue")
+                    return None
 
                 except Exception as e:
                     await conn.rollback()

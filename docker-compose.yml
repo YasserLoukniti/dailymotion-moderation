@@ -21,7 +21,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -32,7 +32,7 @@ services:
     build:
       context: ./moderation-queue
     ports:
-      - "8000:8000"
+      - "8100:8000"
     environment:
       DATABASE_HOST: mysql
       DATABASE_PORT: 3306
@@ -51,7 +51,7 @@ services:
     build:
       context: ./dailymotion-proxy
     ports:
-      - "8001:8001"
+      - "8101:8001"
     environment:
       REDIS_URL: redis://redis:6379/0
       DAILYMOTION_API_BASE_URL: https://api.dailymotion.com
