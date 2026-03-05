@@ -1,7 +1,7 @@
 import logging
 from fastapi import APIRouter, HTTPException, status, Depends
 
-from app.models.schemas import AddVideoRequest, VideoResponse, FlagVideoRequest, FlagVideoResponse
+from app.models.schemas import AddVideoRequest, VideoResponse, FlagVideoRequest, FlagVideoResponse, StatsResponse, ModerationLogEntry
 from app.services.moderation_service import ModerationService
 from app.utils.auth import get_moderator
 
@@ -115,6 +115,52 @@ async def flag_video(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
     except Exception as e:
         logger.error(f"Error flagging video: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
+@router.get(
+    "/stats",
+    response_model=StatsResponse,
+    summary="Get moderation queue statistics"
+)
+async def stats():
+    """
+    Get the number of videos by status.
+
+    Returns HTTP 200 with counts for pending, spam, and not spam videos.
+    """
+    try:
+        return await moderation_service.get_stats()
+    except Exception as e:
+        logger.error(f"Error getting stats: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
+@router.get(
+    "/log_video/{video_id}",
+    response_model=list[ModerationLogEntry],
+    summary="Get moderation history for a video"
+)
+async def log_video(video_id: int):
+    """
+    Get the moderation history of a video for audit purposes.
+
+    Returns HTTP 200 with a list of log entries.
+    Returns HTTP 404 if video not found.
+    """
+    try:
+        result = await moderation_service.get_video_logs(video_id)
+        return result.logs
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting logs for video {video_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"

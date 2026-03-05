@@ -29,7 +29,7 @@ async def get_pool() -> aiomysql.Pool:
             db=settings.database_name,
             minsize=settings.db_min_pool_size,
             maxsize=settings.db_max_pool_size,
-            autocommit=False,
+            autocommit=True,
             charset='utf8mb4',
         )
         logger.info(
