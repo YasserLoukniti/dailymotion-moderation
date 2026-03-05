@@ -7,8 +7,8 @@ graph TB
     UI[Moderation Console UI<br/>Frontend - Not built by us]
 
     subgraph "Docker Compose Network"
-        MQ[Moderation Queue API<br/>FastAPI :8100]
-        DP[Dailymotion API Proxy<br/>FastAPI :8101]
+        MQ[Moderation Queue API<br/>FastAPI :8000]
+        DP[Dailymotion API Proxy<br/>FastAPI :8001]
         DB[(MySQL 8.0<br/>Videos + Logs)]
         RD[(Redis 7<br/>Cache Layer)]
     end
@@ -20,7 +20,7 @@ graph TB
 
     MQ -- "aiomysql<br/>Raw SQL" --> DB
     DP -- "Redis cache<br/>TTL 300s" --> RD
-    DP -- "httpx<br/>GET /video/x2m8jpp" --> DM
+    DP -- "httpx<br/>GET /video/xa0apeu" --> DM
 
     style UI fill:#4a9eff,color:#fff
     style MQ fill:#2d8659,color:#fff

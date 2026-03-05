@@ -11,7 +11,7 @@ See [architecture.md](./architecture.md) for the full system diagram.
                        /                    \
                      /                        \
                    /                            \
-    Moderation Queue API (port 8100)    Dailymotion API Proxy (port 8101)
+    Moderation Queue API (port 8000)    Dailymotion API Proxy (port 8001)
          FastAPI + MySQL                     FastAPI + Redis
          * POST /add_video                   * GET /get_video_info/{video_id}
          * GET  /get_video
@@ -34,10 +34,10 @@ docker-compose up --build
 ```
 
 The services will be available at:
-- Moderation Queue API: http://localhost:8100
-- Dailymotion API Proxy: http://localhost:8101
-- Swagger UI (Queue): http://localhost:8100/docs
-- Swagger UI (Proxy): http://localhost:8101/docs
+- Moderation Queue API: http://localhost:8000
+- Dailymotion API Proxy: http://localhost:8001
+- Swagger UI (Queue): http://localhost:8000/docs
+- Swagger UI (Proxy): http://localhost:8001/docs
 
 ## Running Tests
 
@@ -53,22 +53,22 @@ docker-compose exec dailymotion-proxy python -m pytest tests/ -v
 
 ```bash
 # Add a video to the moderation queue
-curl -XPOST http://localhost:8100/add_video -H 'Content-Type: application/json' -d '{"video_id": 123456}'
+curl -XPOST http://localhost:8000/add_video -H 'Content-Type: application/json' -d '{"video_id": 123456}'
 
 # Get next video to moderate (base64 of "john.doe" = "am9obi5kb2U=")
-curl -XGET http://localhost:8100/get_video -H 'Authorization: am9obi5kb2U='
+curl -XGET http://localhost:8000/get_video -H 'Authorization: am9obi5kb2U='
 
 # Flag a video
-curl -XPOST http://localhost:8100/flag_video -H 'Content-Type: application/json' -H 'Authorization: am9obi5kb2U=' -d '{"video_id": 123456, "status": "spam"}'
+curl -XPOST http://localhost:8000/flag_video -H 'Content-Type: application/json' -H 'Authorization: am9obi5kb2U=' -d '{"video_id": 123456, "status": "spam"}'
 
 # Get queue statistics
-curl -XGET http://localhost:8100/stats
+curl -XGET http://localhost:8000/stats
 
 # Get moderation history
-curl -XGET http://localhost:8100/log_video/123456
+curl -XGET http://localhost:8000/log_video/123456
 
 # Get video info (proxied from Dailymotion API)
-curl -XGET http://localhost:8101/get_video_info/123456
+curl -XGET http://localhost:8001/get_video_info/123456
 ```
 
 ## Technical Choices
