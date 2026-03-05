@@ -1,8 +1,12 @@
 import base64
 import logging
-from fastapi import Header, HTTPException, status
+from fastapi import HTTPException, status, Security
+from fastapi.security import APIKeyHeader
 
 logger = logging.getLogger(__name__)
+
+# Swagger UI will show an "Authorize" button for this header
+auth_header = APIKeyHeader(name="Authorization", auto_error=False)
 
 
 def decode_moderator(authorization: str) -> str:
@@ -30,7 +34,7 @@ def decode_moderator(authorization: str) -> str:
         )
 
 
-async def get_moderator(authorization: str = Header(default=None)) -> str:
+async def get_moderator(authorization: str = Security(auth_header)) -> str:
     """
     FastAPI dependency that extracts and decodes the moderator name
     from the Authorization header.
