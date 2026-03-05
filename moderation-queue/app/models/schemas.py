@@ -52,9 +52,16 @@ class StatsResponse(BaseModel):
 
 class ModerationLogEntry(BaseModel):
     """Single moderation log entry."""
-    date: datetime
+    date: str
     status: str
     moderator: Optional[str]
+
+    @field_validator('date', mode='before')
+    @classmethod
+    def format_date(cls, v):
+        if isinstance(v, datetime):
+            return v.strftime("%Y-%m-%d %H:%M:%S")
+        return str(v)
 
 
 class VideoLogsResponse(BaseModel):

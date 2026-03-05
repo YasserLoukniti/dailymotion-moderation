@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     cache_ttl: int = 300
 
     # The reference video used for all proxy requests (as per test spec)
-    reference_video_id: str = "x2m8jpp"
+    reference_video_id: str = "xa0apeu"
 
     # HTTP client settings
     http_timeout: float = 10.0

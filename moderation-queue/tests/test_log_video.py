@@ -24,7 +24,9 @@ async def test_log_video_initial_entry(client: AsyncClient):
     assert len(logs) == 1
     assert logs[0]["status"] == "pending"
     assert logs[0]["moderator"] is None
-    assert "date" in logs[0]
+    # Date format must be "YYYY-MM-DD HH:MM:SS" (not ISO with T)
+    assert " " in logs[0]["date"]
+    assert "T" not in logs[0]["date"]
 
 
 async def test_log_video_after_flagging(client: AsyncClient):
